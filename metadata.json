@@ -1,0 +1,5 @@
+{
+  "name": "3D Stickman Animator",
+  "description": "A web-based 3D stickman simulator where you can pose joints, create keyframes, and play back animations.",
+  "requestFramePermissions": []
+}
