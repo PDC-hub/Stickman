@@ -5,6 +5,9 @@ import { Stickman } from './components/Stickman';
 import { Pose, Keyframe, INITIAL_POSE, JOINT_CONFIG } from './types';
 import { Play, Pause, Plus, Trash2, RotateCcw, Undo2, Video } from 'lucide-react';
 
+// Simple ID generator fallback
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 // --- Scene Recorder Component ---
 // Captures the canvas stream and handles video file download
 const SceneRecorder = ({ 
@@ -27,9 +30,12 @@ const SceneRecorder = ({
       const stream = canvas.captureStream(30);
       
       // Prefer VP9 for better compression, fallback to default webm
-      const mimeType = MediaRecorder.isTypeSupported("video/webm; codecs=vp9") 
-        ? "video/webm; codecs=vp9" 
-        : "video/webm";
+      let mimeType = "video/webm";
+      if (MediaRecorder.isTypeSupported("video/webm; codecs=vp9")) {
+        mimeType = "video/webm; codecs=vp9";
+      } else if (MediaRecorder.isTypeSupported("video/webm; codecs=vp8")) {
+        mimeType = "video/webm; codecs=vp8";
+      }
 
       const recorder = new MediaRecorder(stream, { mimeType });
       
@@ -175,7 +181,7 @@ export default function App() {
 
   const handleAddKeyframe = () => {
     const newKeyframe: Keyframe = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       pose: JSON.parse(JSON.stringify(currentPose)), // Deep copy
       duration: 1000 // Default 1s
     };
@@ -232,15 +238,21 @@ export default function App() {
       <div className="flex-grow relative z-0">
         <Canvas shadows camera={{ position: [5, 4, 8], fov: 40 }}>
           <color attach="background" args={['#1e293b']} />
+          
+          {/* Default Lighting ensures visibility even if environment fails to load */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+          
+          <Stickman 
+            pose={renderedPose} 
+            selectedJoint={selectedJoint} 
+            onSelectJoint={setSelectedJoint} 
+          />
+          <Grid infiniteGrid sectionSize={3} cellColor="#475569" sectionColor="#64748b" fadeDistance={30} />
+          <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />
+          
           <Suspense fallback={null}>
             <Environment preset="city" />
-            <Stickman 
-              pose={renderedPose} 
-              selectedJoint={selectedJoint} 
-              onSelectJoint={setSelectedJoint} 
-            />
-            <Grid infiniteGrid sectionSize={3} cellColor="#475569" sectionColor="#64748b" fadeDistance={30} />
-            <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.8} />
           </Suspense>
           
           <AnimationRunner 
